@@ -38,6 +38,24 @@
   #gameOver h1{margin:0;color:#ff5b70;font-size:42px}
   #toast{position:fixed;left:50%;top:72px;transform:translateX(-50%);z-index:6;background:#000b;border:1px solid #fff4;border-radius:999px;padding:9px 18px;font-weight:800;opacity:0;transition:.25s;pointer-events:none;text-shadow:0 1px 2px #000}
   #toast.show{opacity:1;top:86px}
+
+  #diffScreen{position:fixed;inset:0;z-index:7;display:flex;align-items:center;justify-content:center;background:#05020ddd}
+  #diffScreen.hidden{display:none}
+  #diffScreen .card{width:min(620px,calc(100vw - 32px));background:#140832;border:1px solid #a79cff55;border-radius:18px;padding:32px;text-align:center;box-shadow:0 20px 80px #000c}
+  #diffScreen h1{margin:0 0 6px;color:#e9e6ff;font-size:36px;letter-spacing:2px}
+  #diffScreen .sub{color:#ada6d8;margin-bottom:24px;font-size:15px}
+  .diff-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+  @media(max-width:520px){.diff-grid{grid-template-columns:1fr}}
+  .diff-btn{background:#1b0a3d;border:2px solid #4a3a80;border-radius:12px;padding:16px 12px;cursor:pointer;text-align:left;transition:border-color .15s,background .15s;color:white;appearance:none;font-family:inherit}
+  .diff-btn:hover{background:#251455}
+  .diff-btn.easy{border-color:#1fda6788}.diff-btn.easy:hover{border-color:#1fda67}
+  .diff-btn.normal{border-color:#8ae9ff88}.diff-btn.normal:hover{border-color:#8ae9ff}
+  .diff-btn.hard{border-color:#f7a03f88}.diff-btn.hard:hover{border-color:#f7a03f}
+  .diff-btn.brutal{border-color:#ff344f88}.diff-btn.brutal:hover{border-color:#ff344f}
+  .diff-btn .name{font-size:18px;font-weight:800;margin-bottom:4px}
+  .diff-btn .info{font-size:12px;color:#ada6d8;line-height:1.4}
+  .easy .name{color:#1fda67}.normal .name{color:#8ae9ff}.hard .name{color:#f7a03f}.brutal .name{color:#ff344f}
+
   @media (max-width:720px){
     #bottomHelp{display:none}
     #hud .bar{width:145px}
@@ -57,8 +75,34 @@
   <div>WAVE <b id="waveText">1</b> · SCORE <b id="scoreText">0</b></div>
   <div id="statText" style="font-size:12px;color:#c8c0ff;margin-top:6px"></div>
 </div>
-<div id="bottomHelp">W/↑ thrust · A/D rotate · Space fire · Shift boost · E pulse · L/P level web · M mute · R restart</div>
+<div id="bottomHelp">W/↑ thrust · A/D rotate · Space fire · Shift boost · E pulse · L/P upgrade web · M mute · R restart</div>
 <div id="toast"></div>
+
+<div id="diffScreen">
+  <div class="card">
+    <h1>STARBREAKER</h1>
+    <div class="sub">Asteroids Roguelite · Choose your difficulty</div>
+    <div class="diff-grid">
+      <button class="diff-btn easy" onclick="startGame(0)">
+        <div class="name">EASY</div>
+        <div class="info">Forgiving spawns · Learn the web · Survive and experiment</div>
+      </button>
+      <button class="diff-btn normal" onclick="startGame(1)">
+        <div class="name">NORMAL</div>
+        <div class="info">Balanced challenge · Standard enemy timing · Recommended</div>
+      </button>
+      <button class="diff-btn hard" onclick="startGame(2)">
+        <div class="name">HARD</div>
+        <div class="info">Faster spawns · Tougher enemies · Every node matters</div>
+      </button>
+      <button class="diff-btn brutal" onclick="startGame(3)">
+        <div class="name">BRUTAL</div>
+        <div class="info">No mercy · Elite enemies from the start · Pure punishment</div>
+      </button>
+    </div>
+    <p style="color:#ada6d8;font-size:13px;margin:0">Unlocked nodes can be leveled up multiple times for stacking bonuses.</p>
+  </div>
+</div>
 
 <div id="overlay">
   <canvas id="webCanvas"></canvas>
@@ -70,7 +114,7 @@
     <p id="nodeMeta"></p>
     <button class="primary" id="unlockBtn" disabled>Unlock node</button>
     <button id="closeBtn">Return to flight</button>
-    <p class="small">Tip: The web is not linear. Weapon, defense, sensor, and crew branches reconnect through advanced hybrid nodes.</p>
+    <p class="small">Tip: Unlocked nodes can be leveled up multiple times for stacking bonuses.</p>
   </div>
 </div>
 
@@ -78,7 +122,7 @@
   <div class="card">
     <h1>SHIP LOST</h1>
     <p id="finalText"></p>
-    <button class="primary" onclick="restart()">Restart Run</button>
+    <button class="primary" onclick="returnToMenu()">Return to Menu</button>
   </div>
 </div>
 
@@ -101,14 +145,25 @@ addEventListener('keydown',e=>{
   if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)) e.preventDefault();
   keys.add(e.code);
   if(e.code==='KeyL'||e.code==='KeyP') toggleWeb();
-  if(e.code==='KeyR') restart();
+  if(e.code==='KeyR') returnToMenu();
   if(e.code==='KeyM') muted=!muted;
   if(e.code==='KeyE') pulse();
 });
 addEventListener('keyup',e=>keys.delete(e.code));
 
-let muted=false, last=0, paused=false, over=false, score=0, time=0, wave=1, spawnTimer=0, asteroidTimer=0, shake=0;
+let muted=false, last=0, paused=true, over=false, score=0, time=0, wave=1, spawnTimer=0, asteroidTimer=0, shake=0;
+let gameState='menu';
+let difficulty=1;
 let bullets=[], enemyBullets=[], asteroids=[], enemies=[], particles=[], pickups=[], stars=[];
+let levelUpEffects=[], screenFlash=0;
+
+const diffSettings=[
+  {name:'EASY',   hpMult:.70, spawnBase:6.0, spawnMin:.9,  spawnScale:.10, extraWave:99, extraChance:.0,  unlock:{hunter:55,  gunship:105, sniper:170, carrier:260}},
+  {name:'NORMAL', hpMult:1.0, spawnBase:4.2, spawnMin:.55, spawnScale:.18, extraWave:6,  extraChance:.25, unlock:{hunter:35,  gunship:75,  sniper:125, carrier:190}},
+  {name:'HARD',   hpMult:1.35,spawnBase:3.0, spawnMin:.40, spawnScale:.22, extraWave:4,  extraChance:.45, unlock:{hunter:20,  gunship:45,  sniper:80,  carrier:130}},
+  {name:'BRUTAL', hpMult:1.75,spawnBase:2.2, spawnMin:.28, spawnScale:.28, extraWave:2,  extraChance:.65, unlock:{hunter:10,  gunship:25,  sniper:50,  carrier:80}},
+];
+
 function wrap(o){ if(o.x<0)o.x+=W; if(o.x>W)o.x-=W; if(o.y<0)o.y+=H; if(o.y>H)o.y-=H; }
 function dist2(a,b){let dx=a.x-b.x,dy=a.y-b.y;return dx*dx+dy*dy}
 function angTo(a,b){return Math.atan2(b.y-a.y,b.x-a.x)}
@@ -116,8 +171,11 @@ function toast(t){const el=document.getElementById('toast'); el.textContent=t; e
 
 const player={
   x:0,y:0,vx:0,vy:0,a:-Math.PI/2,r:14,hp:100,shield:40,fire:0,boost:0,pulseCd:0,xp:0,level:1,ap:0,
-  unlocked:new Set(['core'])
+  unlocked:new Map([['core',1]]),
+  glowTime:0
 };
+
+function nodeLevel(id){ return player.unlocked.get(id)||0; }
 
 const baseStats={
   maxHp:100, shieldCap:40, shieldRegen:5, thrust:210, turn:4.2, drag:.992, maxSpeed:430,
@@ -127,40 +185,44 @@ const baseStats={
 let stats={...baseStats};
 
 const nodes=[
-  {id:'core',x:0,y:0,name:'Command Core',type:'core',cost:0,desc:'Run start. Unlock adjacent branches.'},
-  {id:'hull1',x:-100,y:-45,name:'Expanded Hull I',type:'hull',cost:1,mods:{maxHp:35},desc:'+35 max hull.'},
-  {id:'hull2',x:-215,y:-70,name:'Trussed Frame',type:'hull',cost:2,mods:{maxHp:55,drag:.001},desc:'+55 max hull and slightly better inertial stability.'},
-  {id:'armor1',x:-330,y:-15,name:'Ablative Plates',type:'hull',cost:2,mods:{maxHp:70},desc:'+70 max hull.'},
-  {id:'ram',x:-420,y:70,name:'Impact Keel',type:'hull',cost:3,mods:{maxHp:90},desc:'Massive hull boost. Collisions hurt less because you can survive them.'},
+  {id:'core',x:0,y:0,name:'Command Core',type:'core',cost:0,maxLevel:1,desc:'Run start. Unlock adjacent branches.'},
+  {id:'hull1',x:-100,y:-45,name:'Expanded Hull I',type:'hull',cost:1,maxLevel:3,mods:{maxHp:35},desc:'+35 max hull per level.'},
+  {id:'hull2',x:-215,y:-70,name:'Trussed Frame',type:'hull',cost:2,maxLevel:3,mods:{maxHp:55,drag:.001},desc:'+55 max hull and slightly better inertial stability per level.'},
+  {id:'armor1',x:-330,y:-15,name:'Ablative Plates',type:'hull',cost:2,maxLevel:3,mods:{maxHp:70},desc:'+70 max hull per level.'},
+  {id:'ram',x:-420,y:70,name:'Impact Keel',type:'hull',cost:3,maxLevel:3,mods:{maxHp:90},desc:'Massive hull boost per level.'},
 
-  {id:'mount1',x:105,y:-50,name:'Weapon Mounts I',type:'weapon',cost:1,mods:{mounts:1,spread:.07},desc:'Adds paired side cannons.'},
-  {id:'gun1',x:220,y:-95,name:'Tuned Accelerators',type:'weapon',cost:2,mods:{damage:8,bulletSpeed:90},desc:'+damage and faster rounds.'},
-  {id:'gun2',x:335,y:-120,name:'Mag-Rail Lances',type:'weapon',cost:3,mods:{damage:14,bulletSpeed:120,pierce:1},desc:'High damage rounds pierce one small target.'},
-  {id:'mount2',x:338,y:-30,name:'Weapon Mounts II',type:'weapon',cost:3,mods:{mounts:2,spread:.05},desc:'Adds more hardpoints.'},
-  {id:'storm',x:465,y:-75,name:'Broadside Storm',type:'weapon',cost:4,mods:{mounts:2,damage:10},desc:'Advanced weapon lattice: many guns, much more firepower.'},
+  {id:'mount1',x:105,y:-50,name:'Weapon Mounts I',type:'weapon',cost:1,maxLevel:3,mods:{mounts:1,spread:.07},desc:'Adds paired side cannons per level.'},
+  {id:'gun1',x:220,y:-95,name:'Tuned Accelerators',type:'weapon',cost:2,maxLevel:3,mods:{damage:8,bulletSpeed:90},desc:'+damage and faster rounds per level.'},
+  {id:'gun2',x:335,y:-120,name:'Mag-Rail Lances',type:'weapon',cost:3,maxLevel:3,mods:{damage:14,bulletSpeed:120,pierce:1},desc:'High damage rounds, pierce one small target per level.'},
+  {id:'mount2',x:338,y:-30,name:'Weapon Mounts II',type:'weapon',cost:3,maxLevel:3,mods:{mounts:2,spread:.05},desc:'Adds more hardpoints per level.'},
+  {id:'storm',x:465,y:-75,name:'Broadside Storm',type:'weapon',cost:4,maxLevel:3,mods:{mounts:2,damage:10},desc:'Advanced weapon lattice: many guns per level.'},
 
-  {id:'shield1',x:-80,y:100,name:'Shield Emitters I',type:'shield',cost:1,mods:{shieldCap:35,shieldRegen:2},desc:'+35 shield capacity and regeneration.'},
-  {id:'shield2',x:-155,y:215,name:'Phase Capacitors',type:'shield',cost:2,mods:{shieldCap:55,shieldRegen:4},desc:'Stronger shields that come back faster.'},
-  {id:'shield3',x:-60,y:320,name:'Layered Bubble',type:'shield',cost:3,mods:{shieldCap:85,shieldRegen:5},desc:'Large shield capacity upgrade.'},
-  {id:'pulse',x:70,y:285,name:'Repulsor Pulse',type:'shield',cost:3,mods:{pulse:true,shieldCap:30},desc:'Press E to spend cooldown and push enemies, bullets, and rocks away.'},
+  {id:'shield1',x:-80,y:100,name:'Shield Emitters I',type:'shield',cost:1,maxLevel:3,mods:{shieldCap:35,shieldRegen:2},desc:'+35 shield capacity and regeneration per level.'},
+  {id:'shield2',x:-155,y:215,name:'Phase Capacitors',type:'shield',cost:2,maxLevel:3,mods:{shieldCap:55,shieldRegen:4},desc:'Stronger shields per level.'},
+  {id:'shield3',x:-60,y:320,name:'Layered Bubble',type:'shield',cost:3,maxLevel:3,mods:{shieldCap:85,shieldRegen:5},desc:'Large shield capacity upgrade per level.'},
+  {id:'pulse',x:70,y:285,name:'Repulsor Pulse',type:'shield',cost:3,maxLevel:4,mods:{pulse:true,shieldCap:30},desc:'Press E to push enemies away. Higher levels = wider range and more damage.'},
 
-  {id:'engine1',x:100,y:92,name:'Vector Thrusters',type:'engine',cost:1,mods:{thrust:45,maxSpeed:35},desc:'More acceleration and top speed.'},
-  {id:'engine2',x:190,y:198,name:'Afterburn Chamber',type:'engine',cost:2,mods:{boost:.55,maxSpeed:45},desc:'Stronger Shift boost and higher top speed.'},
-  {id:'engine3',x:292,y:282,name:'Inertial Weave',type:'engine',cost:3,mods:{turn:.8,drag:.002,maxSpeed:50},desc:'Better turning, control, and speed.'},
+  {id:'engine1',x:100,y:92,name:'Vector Thrusters',type:'engine',cost:1,maxLevel:3,mods:{thrust:45,maxSpeed:35},desc:'More acceleration and top speed per level.'},
+  {id:'engine2',x:190,y:198,name:'Afterburn Chamber',type:'engine',cost:2,maxLevel:3,mods:{boost:.55,maxSpeed:45},desc:'Stronger Shift boost and higher top speed per level.'},
+  {id:'engine3',x:292,y:282,name:'Inertial Weave',type:'engine',cost:3,maxLevel:3,mods:{turn:.8,drag:.002,maxSpeed:50},desc:'Better turning, control, and speed per level.'},
 
-  {id:'sensor1',x:-25,y:-145,name:'Sensor Mast',type:'sensor',cost:1,mods:{pickup:55,radar:.25},desc:'Pickups magnetize from farther away and enemies are easier to track.'},
-  {id:'sensor2',x:-80,y:-260,name:'Threat Suite',type:'sensor',cost:2,mods:{pickup:70,radar:.35,crit:.03},desc:'Better sensors increase pickup range and critical hit chance.'},
-  {id:'sensor3',x:40,y:-345,name:'Predictive Targeting',type:'sensor',cost:3,mods:{crit:.09,damage:7},desc:'Sensor-driven fire control.'},
+  {id:'sensor1',x:-25,y:-145,name:'Sensor Mast',type:'sensor',cost:1,maxLevel:3,mods:{pickup:55,radar:.25},desc:'Pickups magnetize from farther away per level.'},
+  {id:'sensor2',x:-80,y:-260,name:'Threat Suite',type:'sensor',cost:2,maxLevel:3,mods:{pickup:70,radar:.35,crit:.03},desc:'Better sensors increase pickup range and crit chance per level.'},
+  {id:'sensor3',x:40,y:-345,name:'Predictive Targeting',type:'sensor',cost:3,maxLevel:3,mods:{crit:.09,damage:7},desc:'Sensor-driven fire control per level.'},
 
-  {id:'crew1',x:30,y:150,name:'Crew: Repair Chief',type:'crew',cost:1,mods:{repair:2},desc:'Slow automatic hull repair.'},
-  {id:'crew2',x:0,y:250,name:'Crew: Gunner Guild',type:'crew',cost:2,mods:{fireRate:1.1,crit:.04},desc:'Fire faster and crit more often.'},
-  {id:'crew3',x:155,y:360,name:'Crew: Salvage Team',type:'crew',cost:2,mods:{salvage:.25,pickup:40},desc:'Gain more XP from salvage and collect it more easily.'},
-  {id:'drones',x:-170,y:380,name:'Escort Drones',type:'crew',cost:3,mods:{drones:2,fireRate:.5},desc:'Two escort drones fire with you.'},
+  {id:'crew1',x:30,y:150,name:'Crew: Repair Chief',type:'crew',cost:1,maxLevel:3,mods:{repair:2},desc:'Slow automatic hull repair per level.'},
+  {id:'crew2',x:0,y:250,name:'Crew: Gunner Guild',type:'crew',cost:2,maxLevel:3,mods:{fireRate:1.1,crit:.04},desc:'Fire faster and crit more often per level.'},
+  {id:'crew3',x:155,y:360,name:'Crew: Salvage Team',type:'crew',cost:2,maxLevel:3,mods:{salvage:.25,pickup:40},desc:'Gain more XP from salvage per level.'},
+  {id:'drones',x:-170,y:380,name:'Escort Drones',type:'crew',cost:3,maxLevel:3,mods:{drones:2,fireRate:.5},desc:'Escort drones fire with you. More levels = more drones.'},
 
-  {id:'hybrid1',x:180,y:-220,name:'Siege Computer',type:'hybrid',cost:4,mods:{damage:18,crit:.08,pickup:40},desc:'Weapon + sensor hybrid. Heavy damage and critical targeting.'},
-  {id:'hybrid2',x:-260,y:255,name:'Citadel Doctrine',type:'hybrid',cost:4,mods:{maxHp:110,shieldCap:75,shieldRegen:4},desc:'Hull + shield hybrid. Become a fortress.'},
-  {id:'hybrid3',x:285,y:90,name:'Skirmisher Rig',type:'hybrid',cost:4,mods:{mounts:1,thrust:65,turn:.7},desc:'Weapon + engine hybrid. Fast attack ship.'},
-  {id:'ultima',x:20,y:-475,name:'Singularity Reactor',type:'ultimate',cost:6,mods:{damage:28,shieldCap:100,shieldRegen:7,maxHp:100,pulse:true},desc:'Endgame reactor: offense, defense, and repulsor pulse.'}
+  {id:'hybrid1',x:180,y:-220,name:'Siege Computer',type:'hybrid',cost:4,maxLevel:2,mods:{damage:18,crit:.08,pickup:40},desc:'Weapon + sensor hybrid. Heavy damage and critical targeting.'},
+  {id:'hybrid2',x:-260,y:255,name:'Citadel Doctrine',type:'hybrid',cost:4,maxLevel:2,mods:{maxHp:110,shieldCap:75,shieldRegen:4},desc:'Hull + shield hybrid. Become a fortress.'},
+  {id:'hybrid3',x:285,y:90,name:'Skirmisher Rig',type:'hybrid',cost:4,maxLevel:2,mods:{mounts:1,thrust:65,turn:.7},desc:'Weapon + engine hybrid. Fast attack ship.'},
+  {id:'ultima',x:20,y:-475,name:'Singularity Reactor',type:'ultimate',cost:6,maxLevel:1,mods:{damage:28,shieldCap:100,shieldRegen:7,maxHp:100,pulse:true},desc:'Endgame reactor: offense, defense, and repulsor pulse.'},
+
+  {id:'vanguard',x:-165,y:35,name:'Vanguard Hull',type:'hybrid',cost:3,maxLevel:2,mods:{maxHp:60,thrust:35,drag:.001},desc:'Hull-engine fusion. Reinforced frame that doesn\'t sacrifice thrust.'},
+  {id:'recon',x:85,y:-195,name:'Recon Package',type:'hybrid',cost:3,maxLevel:2,mods:{crit:.06,thrust:40,radar:.3},desc:'Sensor-engine fusion. Read the battlefield at speed.'},
+  {id:'assault',x:-60,y:195,name:'Assault Doctrine',type:'hybrid',cost:3,maxLevel:2,mods:{damage:12,shieldRegen:3,repair:1.5},desc:'Shield-crew fusion. Aggressive repair and shield cycle.'},
 ];
 const edges=[
  ['core','hull1'],['hull1','hull2'],['hull2','armor1'],['armor1','ram'],
@@ -170,7 +232,22 @@ const edges=[
  ['core','sensor1'],['sensor1','sensor2'],['sensor2','sensor3'],
  ['core','crew1'],['crew1','crew2'],['crew2','crew3'],['shield2','drones'],['crew2','drones'],
  ['sensor3','hybrid1'],['gun2','hybrid1'],['hull2','hybrid2'],['shield3','hybrid2'],['mount2','hybrid3'],['engine3','hybrid3'],
- ['hybrid1','ultima'],['hybrid2','ultima'],['hybrid3','ultima']
+ ['hybrid1','ultima'],['hybrid2','ultima'],['hybrid3','ultima'],
+ ['hull1','shield1'],
+ ['hull1','vanguard'],['engine1','vanguard'],
+ ['shield1','crew1'],
+ ['sensor1','mount1'],
+ ['sensor1','recon'],['engine2','recon'],
+ ['crew1','engine1'],
+ ['shield2','assault'],['crew1','assault'],
+ ['crew2','sensor2'],
+ ['engine2','crew3'],
+ ['armor1','hybrid2'],
+ ['gun1','hybrid3'],
+ ['sensor2','hybrid1'],
+ ['recon','hybrid1'],
+ ['vanguard','hybrid3'],
+ ['assault','hybrid2'],
 ];
 const edgeMap=new Map(); for(const [a,b] of edges){ if(!edgeMap.has(a))edgeMap.set(a,[]); if(!edgeMap.has(b))edgeMap.set(b,[]); edgeMap.get(a).push(b); edgeMap.get(b).push(a); }
 let selected=null;
@@ -178,42 +255,109 @@ let selected=null;
 function recomputeStats(){
   const oldMax=stats.maxHp||baseStats.maxHp, oldShield=stats.shieldCap||baseStats.shieldCap;
   stats={...baseStats};
-  for(const id of player.unlocked){
+  for(const [id,level] of player.unlocked){
     const n=nodes.find(n=>n.id===id); if(!n||!n.mods) continue;
-    for(const [k,v] of Object.entries(n.mods)) stats[k]=(typeof stats[k]==='boolean')?Boolean(v):stats[k]+v;
+    for(const [k,v] of Object.entries(n.mods)){
+      stats[k]=(typeof stats[k]==='boolean')?Boolean(v):(stats[k]+v*level);
+    }
   }
   player.hp=clamp(player.hp + (stats.maxHp-oldMax), 0, stats.maxHp);
   player.shield=clamp(player.shield + (stats.shieldCap-oldShield), 0, stats.shieldCap);
 }
 function canUnlock(n){
-  if(!n||player.unlocked.has(n.id)||player.ap<n.cost) return false;
-  return (edgeMap.get(n.id)||[]).some(id=>player.unlocked.has(id));
+  if(!n) return false;
+  const lv=nodeLevel(n.id);
+  if(lv===0){
+    if(player.ap<n.cost) return false;
+    return (edgeMap.get(n.id)||[]).some(id=>player.unlocked.has(id));
+  } else {
+    if(lv>=n.maxLevel) return false;
+    const upgradeCost=n.cost*(lv+1);
+    if(player.ap<upgradeCost) return false;
+    return true;
+  }
 }
 function unlock(id){
   const n=nodes.find(n=>n.id===id);
   if(!canUnlock(n)) return;
-  player.ap-=n.cost; player.unlocked.add(id); recomputeStats(); updateNodeInfo(); drawWeb(); toast('Unlocked: '+n.name); beep(520,.05,'triangle');
+  const lv=nodeLevel(id);
+  const cost=lv===0?n.cost:n.cost*(lv+1);
+  player.ap-=cost;
+  player.unlocked.set(id,lv+1);
+  recomputeStats(); updateNodeInfo(); drawWeb();
+  if(lv===0){toast('Unlocked: '+n.name);}
+  else{toast('Upgraded: '+n.name+' L'+(lv+1));}
+  beep(520,.05,'triangle');
 }
 
 function resetWorld(){
   player.x=W/2; player.y=H/2; player.vx=0; player.vy=0; player.a=-Math.PI/2; player.hp=stats.maxHp; player.shield=stats.shieldCap;
   bullets=[]; enemyBullets=[]; asteroids=[]; enemies=[]; particles=[]; pickups=[];
-  score=0; time=0; wave=1; spawnTimer=3; asteroidTimer=0; over=false; paused=false;
+  levelUpEffects=[]; screenFlash=0; player.glowTime=0;
+  score=0; time=0; wave=1;
+  const df=diffSettings[difficulty];
+  spawnTimer=df.spawnBase; asteroidTimer=0; over=false; paused=false;
   document.getElementById('gameOver').style.display='none';
   for(let i=0;i<9;i++) spawnAsteroid(rand(0,W),rand(0,H),rand(30,62),true);
 }
-window.restart=function restart(){
-  player.x=W/2; player.y=H/2; player.vx=0; player.vy=0; player.a=-Math.PI/2; player.hp=stats.maxHp; player.shield=stats.shieldCap;
-  player.xp=0; player.level=1; player.ap=0; player.unlocked=new Set(['core']); recomputeStats(); resetWorld(); toast('New run');
+
+window.startGame=function(diff){
+  difficulty=diff;
+  document.getElementById('diffScreen').classList.add('hidden');
+  player.xp=0; player.level=1; player.ap=0;
+  player.unlocked=new Map([['core',1]]);
+  recomputeStats();
+  resetWorld();
+  gameState='playing';
+  toast(diffSettings[diff].name+' — Good luck!');
 };
 
+window.returnToMenu=function(){
+  document.getElementById('diffScreen').classList.remove('hidden');
+  document.getElementById('gameOver').style.display='none';
+  document.getElementById('overlay').classList.remove('open');
+  player.xp=0; player.level=1; player.ap=0;
+  player.unlocked=new Map([['core',1]]);
+  recomputeStats();
+  gameState='menu'; paused=true;
+};
+window.restart=window.returnToMenu;
+
 function xpNeed(){ return 55 + player.level*38 + Math.floor(player.level*player.level*6); }
-function gainXP(x){ player.xp += x*stats.salvage; while(player.xp>=xpNeed()){player.xp-=xpNeed(); player.level++; player.ap++; toast('Level '+player.level+'! Core Point gained'); beep(700,.09,'sine');}}
+
+function spawnLevelUpEffect(x,y,level){
+  for(let i=0;i<4;i++){
+    levelUpEffects.push({type:'ring',x,y,life:1.0+i*.12,maxLife:1.0+i*.12,maxRadius:60+i*45,col:i%2===0?'#f7e43f':'#ee29ff'});
+  }
+  const burstCols=['#f7e43f','#ee29ff','#8ae9ff','#1fda67'];
+  for(let i=0;i<60;i++){
+    const a=rand(0,TAU), sp=rand(80,320);
+    particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:rand(.4,1.1),max:1,col:burstCols[i%4],r:rand(1.5,3.5)});
+  }
+  screenFlash=Math.min(screenFlash+0.55,0.7);
+  player.glowTime=1.5;
+}
+
+function gainXP(x){
+  player.xp+=x*stats.salvage;
+  while(player.xp>=xpNeed()){
+    player.xp-=xpNeed();
+    player.level++;
+    player.ap++;
+    toast('Level '+player.level+'! Core Point gained');
+    beep(700,.09,'sine');
+    spawnLevelUpEffect(player.x,player.y,player.level);
+  }
+}
 function damagePlayer(d){
   if(over) return;
   let s=Math.min(player.shield,d); player.shield-=s; d-=s;
   player.hp-=d; shake=Math.max(shake,d*.25); beep(90,.04,'sawtooth');
-  if(player.hp<=0){over=true; paused=true; document.getElementById('finalText').textContent=`Score ${score} · Wave ${wave} · Level ${player.level}`; document.getElementById('gameOver').style.display='flex';}
+  if(player.hp<=0){
+    over=true; paused=true;
+    document.getElementById('finalText').textContent=`Score ${score} · Wave ${wave} · Level ${player.level} · ${diffSettings[difficulty].name}`;
+    document.getElementById('gameOver').style.display='flex';
+  }
 }
 
 function spawnAsteroid(x,y,r,far=false){
@@ -225,9 +369,15 @@ function spawnAsteroid(x,y,r,far=false){
 function spawnEnemy(){
   const side=Math.floor(rand(0,4)); let x=side===0?0:side===1?W:rand(0,W), y=side===2?0:side===3?H:rand(0,H);
   const t=time;
-  let types=['scout']; if(t>35)types.push('hunter'); if(t>75)types.push('gunship'); if(t>125)types.push('sniper'); if(t>190)types.push('carrier');
+  const df=diffSettings[difficulty];
+  let types=['scout'];
+  if(t>df.unlock.hunter) types.push('hunter');
+  if(t>df.unlock.gunship) types.push('gunship');
+  if(t>df.unlock.sniper) types.push('sniper');
+  if(t>df.unlock.carrier) types.push('carrier');
   const type=types[Math.floor(rand(0,types.length))];
-  const hp={scout:34,hunter:52,gunship:92,sniper:62,carrier:155}[type] + wave*5;
+  const baseHp={scout:34,hunter:52,gunship:92,sniper:62,carrier:155}[type]+wave*5;
+  const hp=Math.round(baseHp*df.hpMult);
   enemies.push({x,y,vx:0,vy:0,a:0,r:type==='carrier'?22:15,hp,maxHp:hp,type,fire:rand(.3,1.5),spawn:1});
 }
 function explode(x,y,n,col='#fff'){ for(let i=0;i<n;i++) particles.push({x,y,vx:rand(-220,220),vy:rand(-220,220),life:rand(.25,.85),max:1,col,r:rand(1,3)}); }
@@ -243,8 +393,8 @@ function beep(freq=.01,dur=.03,type='square'){
 function fire(){
   if(player.fire>0) return;
   player.fire=1/stats.fireRate;
-  const mounts=Math.max(1,Math.floor(stats.mounts));
-  const offsets = mounts===1?[0]: mounts===2?[-.12,.12]: mounts===3?[-.16,0,.16]: mounts===4?[-.22,-.07,.07,.22]:[-.28,-.14,0,.14,.28];
+  const m=Math.min(8,Math.max(1,Math.floor(stats.mounts)));
+  const offsets=Array.from({length:m},(_,i)=>m===1?0:(i-(m-1)/2)*(0.28/Math.max(1,m-1)));
   for(const off of offsets){
     const a=player.a+off+rand(-stats.spread,stats.spread);
     bullets.push({x:player.x+Math.cos(a)*17,y:player.y+Math.sin(a)*17,vx:player.vx+Math.cos(a)*stats.bulletSpeed,vy:player.vy+Math.sin(a)*stats.bulletSpeed,r:3,life:stats.bulletLife,damage:stats.damage*(Math.random()<stats.crit?2.2:1),pierce:stats.pierce});
@@ -256,12 +406,14 @@ function fire(){
   beep(240,.025,'square');
 }
 function pulse(){
-  if(!stats.pulse || player.pulseCd>0 || over || paused) return;
-  player.pulseCd=8; shake=8; beep(110,.12,'sine');
+  const pLv=nodeLevel('pulse');
+  if(!pLv||player.pulseCd>0||over||paused) return;
+  const pRadius=240+pLv*60, pForce=520+pLv*180, pDmg=18+pLv*12, pCd=9-pLv;
+  player.pulseCd=pCd; shake=8; beep(110,.12,'sine');
   const all=[...asteroids,...enemies,...enemyBullets];
   for(const o of all){
     const dx=o.x-player.x, dy=o.y-player.y, d=Math.hypot(dx,dy)||1;
-    if(d<240){ const f=(240-d)/240*520; o.vx+=(dx/d)*f; o.vy+=(dy/d)*f; if(o.hp) o.hp-=18; }
+    if(d<pRadius){ const f=(pRadius-d)/pRadius*pForce; o.vx+=(dx/d)*f; o.vy+=(dy/d)*f; if(o.hp) o.hp-=pDmg; }
   }
   explode(player.x,player.y,60,'#8ae9ff');
 }
@@ -284,8 +436,19 @@ function update(dt){
   player.shield=clamp(player.shield+stats.shieldRegen*dt,0,stats.shieldCap);
   player.hp=clamp(player.hp+stats.repair*dt,0,stats.maxHp);
 
+  // Level-up effects update
+  for(const e of levelUpEffects) e.life-=dt;
+  levelUpEffects=levelUpEffects.filter(e=>e.life>0);
+  screenFlash=Math.max(0,screenFlash-dt*1.8);
+  player.glowTime=Math.max(0,player.glowTime-dt);
+
+  const df=diffSettings[difficulty];
   asteroidTimer-=dt; if(asteroidTimer<=0){ asteroidTimer=Math.max(.7,2.2-wave*.08); if(asteroids.length<14+wave*2) spawnAsteroid(rand(0,W),rand(0,H),rand(28,58),true); }
-  spawnTimer-=dt; if(spawnTimer<=0){ spawnTimer=Math.max(.55,4.2-wave*.18); spawnEnemy(); if(wave>6 && Math.random()<.25) spawnEnemy(); }
+  spawnTimer-=dt; if(spawnTimer<=0){
+    spawnTimer=Math.max(df.spawnMin,df.spawnBase-wave*df.spawnScale);
+    spawnEnemy();
+    if(wave>df.extraWave && Math.random()<df.extraChance) spawnEnemy();
+  }
 
   for(const b of bullets){b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;wrap(b)}
   bullets=bullets.filter(b=>b.life>0);
@@ -331,7 +494,20 @@ function update(dt){
 
 function drawShip(x,y,a,scale=1){
   ctx.save(); ctx.translate(x,y); ctx.rotate(a); ctx.scale(scale,scale);
+  // Level aura at level 5+
+  if(player.level>=5){
+    const glow=ctx.createRadialGradient(0,0,10,0,0,35);
+    glow.addColorStop(0,'rgba(238,41,255,0)');
+    glow.addColorStop(.5,`rgba(238,41,255,${Math.min(.35,(player.level-4)*.04)})`);
+    glow.addColorStop(1,'rgba(238,41,255,0)');
+    ctx.fillStyle=glow; ctx.beginPath(); ctx.arc(0,0,35,0,TAU); ctx.fill();
+  }
+  // Glow time effect
+  if(player.glowTime>0){
+    ctx.shadowColor='#f7e43f'; ctx.shadowBlur=20+Math.sin(player.glowTime*12)*10;
+  }
   ctx.strokeStyle='#e9e6ff'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(18,0); ctx.lineTo(-13,-10); ctx.lineTo(-8,0); ctx.lineTo(-13,10); ctx.closePath(); ctx.stroke();
+  ctx.shadowBlur=0;
   ctx.strokeStyle='#8ae9ff88'; ctx.beginPath(); ctx.arc(0,0,stats.shieldCap>80?20:17,0,TAU); ctx.stroke();
   ctx.restore();
 }
@@ -340,6 +516,32 @@ function render(){
   ctx.clearRect(0,0,W,H);
   ctx.save(); if(shake){ctx.translate(rand(-shake,shake),rand(-shake,shake))}
   ctx.fillStyle='#ffffff'; for(const s of stars){ctx.globalAlpha=s.a; ctx.fillRect((s.x-player.x*s.z%W+W)%W,(s.y-player.y*s.z%H+H)%H,s.r,s.r)} ctx.globalAlpha=1;
+
+  // Level-up ring effects (before pickups/enemies/bullets)
+  for(const e of levelUpEffects){
+    const t=1-e.life/e.maxLife;
+    const r=t*e.maxRadius;
+    const alpha=e.life/e.maxLife;
+    ctx.save();
+    ctx.globalAlpha=alpha*0.85;
+    ctx.strokeStyle=e.col;
+    ctx.lineWidth=Math.max(.5,3*(1-t));
+    ctx.shadowColor=e.col; ctx.shadowBlur=12;
+    ctx.beginPath(); ctx.arc(e.x,e.y,Math.max(1,r),0,TAU); ctx.stroke();
+    ctx.restore();
+  }
+  ctx.shadowBlur=0;
+
+  // Screen flash
+  if(screenFlash>0){
+    ctx.fillStyle=`rgba(247,228,63,${screenFlash*.12})`;
+    ctx.fillRect(0,0,W,H);
+    const edgeGlow=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*.3,W/2,H/2,Math.min(W,H)*.75);
+    edgeGlow.addColorStop(0,'rgba(0,0,0,0)');
+    edgeGlow.addColorStop(1,`rgba(238,41,255,${screenFlash*.18})`);
+    ctx.fillStyle=edgeGlow; ctx.fillRect(0,0,W,H);
+  }
+
   for(const p of particles){ctx.globalAlpha=clamp(p.life/.8,0,1);ctx.fillStyle=p.col;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,TAU);ctx.fill()} ctx.globalAlpha=1;
   for(const p of pickups){ctx.strokeStyle='#1fda67'; ctx.fillStyle='#dfff77'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,TAU); ctx.fill(); ctx.stroke();}
   ctx.strokeStyle='#b7b0df'; ctx.lineWidth=2;
@@ -354,7 +556,7 @@ function render(){
   ctx.fillStyle='#f7e43f'; for(const b of bullets){ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,TAU);ctx.fill()}
   ctx.fillStyle='#ff344f'; for(const b of enemyBullets){ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,TAU);ctx.fill()}
   drawShip(player.x,player.y,player.a);
-  if(stats.pulse){ctx.strokeStyle=player.pulseCd<=0?'#8ae9ff66':'#5555';ctx.beginPath();ctx.arc(player.x,player.y,40+Math.sin(time*5)*3,0,TAU);ctx.stroke();}
+  if(nodeLevel('pulse')>0){ctx.strokeStyle=player.pulseCd<=0?'#8ae9ff66':'#5555';ctx.beginPath();ctx.arc(player.x,player.y,40+Math.sin(time*5)*3,0,TAU);ctx.stroke();}
   ctx.restore();
   updateHUD();
 }
@@ -369,33 +571,71 @@ function updateHUD(){
   document.getElementById('apText').textContent=player.ap;
   document.getElementById('waveText').textContent=wave;
   document.getElementById('scoreText').textContent=score;
-  document.getElementById('statText').textContent=`DMG ${Math.round(stats.damage)} · GUNS ${Math.max(1,Math.floor(stats.mounts))} · SPD ${Math.round(stats.maxSpeed)} · PULSE ${stats.pulse?(player.pulseCd>0?player.pulseCd.toFixed(1)+'s':'ready'):'locked'}`;
+  const pLv=nodeLevel('pulse');
+  const pulseStr=pLv>0?(player.pulseCd>0?player.pulseCd.toFixed(1)+'s':'ready L'+pLv):'locked';
+  document.getElementById('statText').textContent=`[${diffSettings[difficulty].name}] DMG ${Math.round(stats.damage)} · GUNS ${Math.min(8,Math.max(1,Math.floor(stats.mounts)))} · SPD ${Math.round(stats.maxSpeed)} · PULSE ${pulseStr}`;
 }
 
-function loop(ts){const dt=Math.min(.033,(ts-last)/1000||0); last=ts; if(!paused) update(dt); render(); requestAnimationFrame(loop);}
+function loop(ts){
+  const dt=Math.min(.033,(ts-last)/1000||0); last=ts;
+  if(!paused && gameState==='playing') update(dt);
+  render();
+  requestAnimationFrame(loop);
+}
 
 function drawWeb(){
   if(!wctx) return; wctx.clearRect(0,0,W,H);
-  const cx=W*.43, cy=H*.50, scale=Math.min(1.1,Math.max(.62,Math.min(W/1100,H/760)));
+  const cx=W*.43, cy=H*.50, scale=Math.min(1.1,Math.max(.55,Math.min(W/1200,H/780)));
   wctx.save(); wctx.translate(cx,cy); wctx.scale(scale,scale);
   wctx.lineCap='round';
-  for(const [a,b] of edges){const na=nodes.find(n=>n.id===a), nb=nodes.find(n=>n.id===b); const active=player.unlocked.has(a)&&player.unlocked.has(b); const avail=(player.unlocked.has(a)&&!player.unlocked.has(b))||(player.unlocked.has(b)&&!player.unlocked.has(a));
-    wctx.strokeStyle=active?'#1fda67cc':avail?'#f7e43faa':'#7b70aa66'; wctx.lineWidth=active?5:3; wctx.beginPath(); wctx.moveTo(na.x,na.y); wctx.lineTo(nb.x,nb.y); wctx.stroke();
+  for(const [a,b] of edges){
+    const na=nodes.find(n=>n.id===a), nb=nodes.find(n=>n.id===b);
+    const laA=nodeLevel(a)>0, laB=nodeLevel(b)>0;
+    const active=laA&&laB;
+    const avail=(laA&&!laB)||(laB&&!laA);
+    wctx.strokeStyle=active?'#1fda67cc':avail?'#f7e43faa':'#7b70aa66'; wctx.lineWidth=active?5:3;
+    wctx.beginPath(); wctx.moveTo(na.x,na.y); wctx.lineTo(nb.x,nb.y); wctx.stroke();
   }
   for(const n of nodes){
-    const unlocked=player.unlocked.has(n.id), avail=canUnlock(n);
+    const lv=nodeLevel(n.id);
+    const unlocked=lv>0, avail=canUnlock(n);
+    const upgradeable=unlocked && avail;
+    const radius=n.id==='core'?14:n.type==='ultimate'?13:9;
+
+    // Glow behind unlocked nodes
+    if(lv>0){
+      const glow=wctx.createRadialGradient(n.x,n.y,0,n.x,n.y,radius*3);
+      const glowAlpha=Math.min(.6,lv*.18);
+      glow.addColorStop(0,`rgba(31,218,103,${glowAlpha})`);
+      glow.addColorStop(1,'rgba(31,218,103,0)');
+      wctx.fillStyle=glow; wctx.beginPath(); wctx.arc(n.x,n.y,radius*3,0,TAU); wctx.fill();
+    }
+
     let color=unlocked?'#1fda67':avail?'#f7e43f':'#ff344f';
     if(n.type==='ultimate'&&!unlocked) color=avail?'#ee29ff':'#704070';
     wctx.fillStyle=color; wctx.strokeStyle='#dff6ff'; wctx.lineWidth=unlocked?3:1.5;
-    wctx.beginPath(); wctx.arc(n.x,n.y,n.id==='core'?14:n.type==='ultimate'?13:9,0,TAU); wctx.fill(); wctx.stroke();
+    wctx.beginPath(); wctx.arc(n.x,n.y,radius,0,TAU); wctx.fill(); wctx.stroke();
     if(selected&&selected.id===n.id){wctx.strokeStyle='#fff';wctx.lineWidth=4;wctx.beginPath();wctx.arc(n.x,n.y,18,0,TAU);wctx.stroke();}
-    if(avail&&!unlocked){wctx.fillStyle='#000';wctx.font='bold 11px system-ui';wctx.textAlign='center';wctx.fillText(n.cost,n.x,n.y+4)}
+
+    // Show level label for unlocked nodes, or cost for available
+    if(unlocked){
+      wctx.fillStyle='#000';wctx.font='bold 10px system-ui';wctx.textAlign='center';
+      if(upgradeable){
+        wctx.fillStyle='#f7e43f';wctx.font='bold 11px system-ui';
+        wctx.fillText('▲',n.x,n.y+4);
+      } else {
+        wctx.fillStyle='#000';
+        wctx.fillText('L'+lv,n.x,n.y+4);
+      }
+    } else if(avail){
+      wctx.fillStyle='#000';wctx.font='bold 11px system-ui';wctx.textAlign='center';wctx.fillText(n.cost,n.x,n.y+4);
+    }
     wctx.fillStyle=n.type==='ultimate'?'#ee29ff':'#f0eaff'; wctx.font='bold 12px system-ui'; wctx.textAlign='center'; wctx.fillText(n.name,n.x,n.y-18);
   }
   wctx.restore();
 }
 function webPoint(clientX,clientY){
-  const cx=W*.43, cy=H*.50, scale=Math.min(1.1,Math.max(.62,Math.min(W/1100,H/760)));
+  const cx=W*.43, cy=H*.50, scale=Math.min(1.1,Math.max(.55,Math.min(W/1200,H/780)));
   return {x:(clientX-cx)/scale,y:(clientY-cy)/scale};
 }
 webCanvas.addEventListener('click',e=>{
@@ -406,13 +646,22 @@ webCanvas.addEventListener('click',e=>{
 document.getElementById('unlockBtn').onclick=()=>selected&&unlock(selected.id);
 document.getElementById('closeBtn').onclick=()=>toggleWeb(false);
 function updateNodeInfo(){
-  const n=selected; const name=document.getElementById('nodeName'), desc=document.getElementById('nodeDesc'), meta=document.getElementById('nodeMeta'), btn=document.getElementById('unlockBtn');
-  if(!n){name.textContent='Select a node';desc.textContent='Click a node to inspect it.';meta.textContent='';btn.disabled=true;return}
-  name.textContent=n.name; desc.textContent=n.desc;
+  const n=selected;
+  const nameEl=document.getElementById('nodeName'), desc=document.getElementById('nodeDesc'), meta=document.getElementById('nodeMeta'), btn=document.getElementById('unlockBtn');
+  if(!n){nameEl.textContent='Select a node';desc.textContent='Click a node to inspect it.';meta.textContent='';btn.disabled=true;return}
+  const lv=nodeLevel(n.id);
+  const unlocked=lv>0;
+  const avail=canUnlock(n);
+  const upgradeCost=lv===0?n.cost:n.cost*(lv+1);
+  nameEl.textContent=n.name+(unlocked?' [L'+lv+(lv<n.maxLevel?'/'+n.maxLevel+']':' MAX]'):'');
+  desc.textContent=n.desc;
   const prereq=(edgeMap.get(n.id)||[]).filter(id=>player.unlocked.has(id)).map(id=>nodes.find(n=>n.id===id).name);
-  const locked=player.unlocked.has(n.id), avail=canUnlock(n);
-  meta.innerHTML=`Type: <b>${n.type}</b><br>Cost: <b>${n.cost}</b> Core Point${n.cost===1?'':'s'}<br>Status: <b>${locked?'Unlocked':avail?'Available':'Locked'}</b>${prereq.length?'<br>Connected from: '+prereq.join(', '):''}`;
-  btn.disabled=!avail; btn.textContent=locked?'Unlocked':`Unlock for ${n.cost} Core Point${n.cost===1?'':'s'}`;
+  meta.innerHTML=`Type: <b>${n.type}</b><br>Cost: <b>${upgradeCost}</b> Core Point${upgradeCost===1?'':'s'}${n.maxLevel>1?' (max L'+n.maxLevel+')':''}<br>Status: <b>${unlocked?(lv>=n.maxLevel?'Max Level':'L'+lv+' — upgradeable'):avail?'Available':'Locked'}</b>${prereq.length?'<br>Connected from: '+prereq.join(', '):''}`;
+  btn.disabled=!avail;
+  if(!unlocked) btn.textContent=`Unlock for ${n.cost} Core Point${n.cost===1?'':'s'}`;
+  else if(lv<n.maxLevel && avail) btn.textContent=`Upgrade to L${lv+1} for ${upgradeCost} Core Point${upgradeCost===1?'':'s'}`;
+  else if(lv>=n.maxLevel) btn.textContent='Max Level';
+  else btn.textContent='Upgrade (need '+upgradeCost+' pts)';
 }
 function toggleWeb(force){
   const o=document.getElementById('overlay'); const open=force===undefined?!o.classList.contains('open'):force;
@@ -420,7 +669,10 @@ function toggleWeb(force){
 }
 
 for(let i=0;i<220;i++) stars.push({x:rand(0,W||innerWidth),y:rand(0,H||innerHeight),z:rand(.02,.12),r:rand(.7,1.8),a:rand(.25,.9)});
-resize(); recomputeStats(); resetWorld(); requestAnimationFrame(loop);
+resize(); recomputeStats();
+// Start in menu state — show diff screen, don't start game yet
+paused=true; gameState='menu';
+requestAnimationFrame(loop);
 })();
 </script>
 </body>
