@@ -164,7 +164,10 @@ const diffSettings=[
   {name:'BRUTAL', hpMult:1.75,spawnBase:2.2, spawnMin:.28, spawnScale:.28, extraWave:2,  extraChance:.65, unlock:{hunter:10,  gunship:25,  sniper:50,  carrier:80}},
 ];
 
-function wrap(o){ if(o.x<0)o.x+=W; if(o.x>W)o.x-=W; if(o.y<0)o.y+=H; if(o.y>H)o.y-=H; }
+function wrap(o){
+  if(o.entering){ if(o.x>=0&&o.x<=W&&o.y>=0&&o.y<=H) o.entering=false; return; }
+  if(o.x<0)o.x+=W; if(o.x>W)o.x-=W; if(o.y<0)o.y+=H; if(o.y>H)o.y-=H;
+}
 function dist2(a,b){let dx=a.x-b.x,dy=a.y-b.y;return dx*dx+dy*dy}
 function angTo(a,b){return Math.atan2(b.y-a.y,b.x-a.x)}
 function toast(t){const el=document.getElementById('toast'); el.textContent=t; el.classList.add('show'); clearTimeout(toast.t); toast.t=setTimeout(()=>el.classList.remove('show'),1700)}
@@ -186,43 +189,43 @@ let stats={...baseStats};
 
 const nodes=[
   {id:'core',x:0,y:0,name:'Command Core',type:'core',cost:0,maxLevel:1,desc:'Run start. Unlock adjacent branches.'},
-  {id:'hull1',x:-100,y:-45,name:'Expanded Hull I',type:'hull',cost:1,maxLevel:3,mods:{maxHp:35},desc:'+35 max hull per level.'},
-  {id:'hull2',x:-215,y:-70,name:'Trussed Frame',type:'hull',cost:2,maxLevel:3,mods:{maxHp:55,drag:.001},desc:'+55 max hull and slightly better inertial stability per level.'},
-  {id:'armor1',x:-330,y:-15,name:'Ablative Plates',type:'hull',cost:2,maxLevel:3,mods:{maxHp:70},desc:'+70 max hull per level.'},
-  {id:'ram',x:-420,y:70,name:'Impact Keel',type:'hull',cost:3,maxLevel:3,mods:{maxHp:90},desc:'Massive hull boost per level.'},
+  {id:'hull1',x:-69,y:-58,name:'Expanded Hull I',type:'hull',cost:1,maxLevel:3,mods:{maxHp:35},desc:'+35 max hull per level.'},
+  {id:'hull2',x:-162,y:-66,name:'Trussed Frame',type:'hull',cost:2,maxLevel:3,mods:{maxHp:55,drag:.001},desc:'+55 max hull and slightly better inertial stability per level.'},
+  {id:'armor1',x:-258,y:-36,name:'Ablative Plates',type:'hull',cost:2,maxLevel:3,mods:{maxHp:70},desc:'+70 max hull per level.'},
+  {id:'ram',x:-342,y:48,name:'Impact Keel',type:'hull',cost:3,maxLevel:3,mods:{maxHp:90},desc:'Massive hull boost per level.'},
 
-  {id:'mount1',x:105,y:-50,name:'Weapon Mounts I',type:'weapon',cost:1,maxLevel:3,mods:{mounts:1,spread:.07},desc:'Adds paired side cannons per level.'},
-  {id:'gun1',x:220,y:-95,name:'Tuned Accelerators',type:'weapon',cost:2,maxLevel:3,mods:{damage:8,bulletSpeed:90},desc:'+damage and faster rounds per level.'},
-  {id:'gun2',x:335,y:-120,name:'Mag-Rail Lances',type:'weapon',cost:3,maxLevel:3,mods:{damage:14,bulletSpeed:120,pierce:1},desc:'High damage rounds, pierce one small target per level.'},
-  {id:'mount2',x:338,y:-30,name:'Weapon Mounts II',type:'weapon',cost:3,maxLevel:3,mods:{mounts:2,spread:.05},desc:'Adds more hardpoints per level.'},
-  {id:'storm',x:465,y:-75,name:'Broadside Storm',type:'weapon',cost:4,maxLevel:3,mods:{mounts:2,damage:10},desc:'Advanced weapon lattice: many guns per level.'},
+  {id:'mount1',x:74,y:-52,name:'Weapon Mounts I',type:'weapon',cost:1,maxLevel:3,mods:{mounts:1,spread:.07},desc:'Adds paired side cannons per level.'},
+  {id:'gun1',x:155,y:-82,name:'Tuned Accelerators',type:'weapon',cost:2,maxLevel:3,mods:{damage:8,bulletSpeed:90},desc:'+damage and faster rounds per level.'},
+  {id:'gun2',x:244,y:-89,name:'Mag-Rail Lances',type:'weapon',cost:3,maxLevel:3,mods:{damage:14,bulletSpeed:120,pierce:1},desc:'High damage rounds, pierce one small target per level.'},
+  {id:'mount2',x:134,y:-149,name:'Weapon Mounts II',type:'weapon',cost:3,maxLevel:3,mods:{mounts:2,spread:.05},desc:'Adds more hardpoints per level.'},
+  {id:'storm',x:289,y:-188,name:'Broadside Storm',type:'weapon',cost:4,maxLevel:3,mods:{mounts:2,damage:10},desc:'Advanced weapon lattice: many guns per level.'},
 
-  {id:'shield1',x:-80,y:100,name:'Shield Emitters I',type:'shield',cost:1,maxLevel:3,mods:{shieldCap:35,shieldRegen:2},desc:'+35 shield capacity and regeneration per level.'},
-  {id:'shield2',x:-155,y:215,name:'Phase Capacitors',type:'shield',cost:2,maxLevel:3,mods:{shieldCap:55,shieldRegen:4},desc:'Stronger shields per level.'},
-  {id:'shield3',x:-60,y:320,name:'Layered Bubble',type:'shield',cost:3,maxLevel:3,mods:{shieldCap:85,shieldRegen:5},desc:'Large shield capacity upgrade per level.'},
-  {id:'pulse',x:70,y:285,name:'Repulsor Pulse',type:'shield',cost:3,maxLevel:4,mods:{pulse:true,shieldCap:30},desc:'Press E to push enemies away. Higher levels = wider range and more damage.'},
+  {id:'shield1',x:-58,y:69,name:'Shield Emitters I',type:'shield',cost:1,maxLevel:3,mods:{shieldCap:35,shieldRegen:2},desc:'+35 shield capacity and regeneration per level.'},
+  {id:'shield2',x:-143,y:100,name:'Phase Capacitors',type:'shield',cost:2,maxLevel:3,mods:{shieldCap:55,shieldRegen:4},desc:'Stronger shields per level.'},
+  {id:'shield3',x:-241,y:97,name:'Layered Bubble',type:'shield',cost:3,maxLevel:3,mods:{shieldCap:85,shieldRegen:5},desc:'Large shield capacity upgrade per level.'},
+  {id:'pulse',x:-264,y:222,name:'Repulsor Pulse',type:'shield',cost:3,maxLevel:4,mods:{pulse:true,shieldCap:30},desc:'Press E to push enemies away. Higher levels = wider range and more damage.'},
 
-  {id:'engine1',x:100,y:92,name:'Vector Thrusters',type:'engine',cost:1,maxLevel:3,mods:{thrust:45,maxSpeed:35},desc:'More acceleration and top speed per level.'},
-  {id:'engine2',x:190,y:198,name:'Afterburn Chamber',type:'engine',cost:2,maxLevel:3,mods:{boost:.55,maxSpeed:45},desc:'Stronger Shift boost and higher top speed per level.'},
-  {id:'engine3',x:292,y:282,name:'Inertial Weave',type:'engine',cost:3,maxLevel:3,mods:{turn:.8,drag:.002,maxSpeed:50},desc:'Better turning, control, and speed per level.'},
+  {id:'engine1',x:79,y:42,name:'Vector Thrusters',type:'engine',cost:1,maxLevel:3,mods:{thrust:45,maxSpeed:35},desc:'More acceleration and top speed per level.'},
+  {id:'engine2',x:143,y:100,name:'Afterburn Chamber',type:'engine',cost:2,maxLevel:3,mods:{boost:.55,maxSpeed:45},desc:'Stronger Shift boost and higher top speed per level.'},
+  {id:'engine3',x:193,y:174,name:'Inertial Weave',type:'engine',cost:3,maxLevel:3,mods:{turn:.8,drag:.002,maxSpeed:50},desc:'Better turning, control, and speed per level.'},
 
-  {id:'sensor1',x:-25,y:-145,name:'Sensor Mast',type:'sensor',cost:1,maxLevel:3,mods:{pickup:55,radar:.25},desc:'Pickups magnetize from farther away per level.'},
-  {id:'sensor2',x:-80,y:-260,name:'Threat Suite',type:'sensor',cost:2,maxLevel:3,mods:{pickup:70,radar:.35,crit:.03},desc:'Better sensors increase pickup range and crit chance per level.'},
-  {id:'sensor3',x:40,y:-345,name:'Predictive Targeting',type:'sensor',cost:3,maxLevel:3,mods:{crit:.09,damage:7},desc:'Sensor-driven fire control per level.'},
+  {id:'sensor1',x:-8,y:-90,name:'Sensor Mast',type:'sensor',cost:1,maxLevel:3,mods:{pickup:55,radar:.25},desc:'Pickups magnetize from farther away per level.'},
+  {id:'sensor2',x:-6,y:-175,name:'Threat Suite',type:'sensor',cost:2,maxLevel:3,mods:{pickup:70,radar:.35,crit:.03},desc:'Better sensors increase pickup range and crit chance per level.'},
+  {id:'sensor3',x:9,y:-260,name:'Predictive Targeting',type:'sensor',cost:3,maxLevel:3,mods:{crit:.09,damage:7},desc:'Sensor-driven fire control per level.'},
 
-  {id:'crew1',x:30,y:150,name:'Crew: Repair Chief',type:'crew',cost:1,maxLevel:3,mods:{repair:2},desc:'Slow automatic hull repair per level.'},
-  {id:'crew2',x:0,y:250,name:'Crew: Gunner Guild',type:'crew',cost:2,maxLevel:3,mods:{fireRate:1.1,crit:.04},desc:'Fire faster and crit more often per level.'},
-  {id:'crew3',x:155,y:360,name:'Crew: Salvage Team',type:'crew',cost:2,maxLevel:3,mods:{salvage:.25,pickup:40},desc:'Gain more XP from salvage per level.'},
-  {id:'drones',x:-170,y:380,name:'Escort Drones',type:'crew',cost:3,maxLevel:3,mods:{drones:2,fireRate:.5},desc:'Escort drones fire with you. More levels = more drones.'},
+  {id:'crew1',x:16,y:89,name:'Crew: Repair Chief',type:'crew',cost:1,maxLevel:3,mods:{repair:2},desc:'Slow automatic hull repair per level.'},
+  {id:'crew2',x:-15,y:174,name:'Crew: Gunner Guild',type:'crew',cost:2,maxLevel:3,mods:{fireRate:1.1,crit:.04},desc:'Fire faster and crit more often per level.'},
+  {id:'crew3',x:122,y:230,name:'Crew: Salvage Team',type:'crew',cost:2,maxLevel:3,mods:{salvage:.25,pickup:40},desc:'Gain more XP from salvage per level.'},
+  {id:'drones',x:-122,y:230,name:'Escort Drones',type:'crew',cost:3,maxLevel:3,mods:{drones:2,fireRate:.5},desc:'Escort drones fire with you. More levels = more drones.'},
 
-  {id:'hybrid1',x:180,y:-220,name:'Siege Computer',type:'hybrid',cost:4,maxLevel:2,mods:{damage:18,crit:.08,pickup:40},desc:'Weapon + sensor hybrid. Heavy damage and critical targeting.'},
-  {id:'hybrid2',x:-260,y:255,name:'Citadel Doctrine',type:'hybrid',cost:4,maxLevel:2,mods:{maxHp:110,shieldCap:75,shieldRegen:4},desc:'Hull + shield hybrid. Become a fortress.'},
-  {id:'hybrid3',x:285,y:90,name:'Skirmisher Rig',type:'hybrid',cost:4,maxLevel:2,mods:{mounts:1,thrust:65,turn:.7},desc:'Weapon + engine hybrid. Fast attack ship.'},
-  {id:'ultima',x:20,y:-475,name:'Singularity Reactor',type:'ultimate',cost:6,maxLevel:1,mods:{damage:28,shieldCap:100,shieldRegen:7,maxHp:100,pulse:true},desc:'Endgame reactor: offense, defense, and repulsor pulse.'},
+  {id:'hybrid1',x:183,y:-293,name:'Siege Computer',type:'hybrid',cost:4,maxLevel:2,mods:{damage:18,crit:.08,pickup:40},desc:'Weapon + sensor hybrid. Heavy damage and critical targeting.'},
+  {id:'hybrid2',x:-313,y:146,name:'Citadel Doctrine',type:'hybrid',cost:4,maxLevel:2,mods:{maxHp:110,shieldCap:75,shieldRegen:4},desc:'Hull + shield hybrid. Become a fortress.'},
+  {id:'hybrid3',x:342,y:48,name:'Skirmisher Rig',type:'hybrid',cost:4,maxLevel:2,mods:{mounts:1,thrust:65,turn:.7},desc:'Weapon + engine hybrid. Fast attack ship.'},
+  {id:'ultima',x:89,y:-421,name:'Singularity Reactor',type:'ultimate',cost:6,maxLevel:1,mods:{damage:28,shieldCap:100,shieldRegen:7,maxHp:100,pulse:true},desc:'Endgame reactor: offense, defense, and repulsor pulse.'},
 
-  {id:'vanguard',x:-165,y:35,name:'Vanguard Hull',type:'hybrid',cost:3,maxLevel:2,mods:{maxHp:60,thrust:35,drag:.001},desc:'Hull-engine fusion. Reinforced frame that doesn\'t sacrifice thrust.'},
-  {id:'recon',x:85,y:-195,name:'Recon Package',type:'hybrid',cost:3,maxLevel:2,mods:{crit:.06,thrust:40,radar:.3},desc:'Sensor-engine fusion. Read the battlefield at speed.'},
-  {id:'assault',x:-60,y:195,name:'Assault Doctrine',type:'hybrid',cost:3,maxLevel:2,mods:{damage:12,shieldRegen:3,repair:1.5},desc:'Shield-crew fusion. Aggressive repair and shield cycle.'},
+  {id:'vanguard',x:120,y:5,name:'Vanguard Hull',type:'hybrid',cost:3,maxLevel:2,mods:{maxHp:60,thrust:35,drag:.001},desc:'Hull-engine fusion. Reinforced frame that doesn\'t sacrifice thrust.'},
+  {id:'recon',x:77,y:-174,name:'Recon Package',type:'hybrid',cost:3,maxLevel:2,mods:{crit:.06,thrust:40,radar:.3},desc:'Sensor-engine fusion. Read the battlefield at speed.'},
+  {id:'assault',x:-100,y:155,name:'Assault Doctrine',type:'hybrid',cost:3,maxLevel:2,mods:{damage:12,shieldRegen:3,repair:1.5},desc:'Shield-crew fusion. Aggressive repair and shield cycle.'},
 ];
 const edges=[
  ['core','hull1'],['hull1','hull2'],['hull2','armor1'],['armor1','ram'],
@@ -251,6 +254,7 @@ const edges=[
 ];
 const edgeMap=new Map(); for(const [a,b] of edges){ if(!edgeMap.has(a))edgeMap.set(a,[]); if(!edgeMap.has(b))edgeMap.set(b,[]); edgeMap.get(a).push(b); edgeMap.get(b).push(a); }
 let selected=null;
+let webView={cx:0,cy:0,scale:1,oy:95};
 
 function recomputeStats(){
   const oldMax=stats.maxHp||baseStats.maxHp, oldShield=stats.shieldCap||baseStats.shieldCap;
@@ -360,14 +364,23 @@ function damagePlayer(d){
   }
 }
 
-function spawnAsteroid(x,y,r,far=false){
-  if(far && Math.hypot(x-player.x,y-player.y)<180){x=(x+W/2)%W;y=(y+H/2)%H}
+function spawnAsteroid(x,y,r,fromEdge=false){
+  let vx=rand(-70,70), vy=rand(-70,70), entering=false;
+  if(fromEdge){
+    // Spawn fully off-screen along a random edge, drifting inward onto the map.
+    const m=r+50, side=Math.floor(rand(0,4));
+    if(side===0){ x=-m;   y=rand(H*.15,H*.85); vx=rand(40,100);  vy=rand(-25,25); }
+    else if(side===1){ x=W+m; y=rand(H*.15,H*.85); vx=-rand(40,100); vy=rand(-25,25); }
+    else if(side===2){ x=rand(W*.15,W*.85); y=-m;   vy=rand(40,100);  vx=rand(-25,25); }
+    else { x=rand(W*.15,W*.85); y=H+m; vy=-rand(40,100); vx=rand(-25,25); }
+    entering=true;
+  }
   const verts=[]; const c=10+Math.floor(rand(0,5));
   for(let i=0;i<c;i++) verts.push(rand(.68,1.22));
-  asteroids.push({x,y,vx:rand(-70,70),vy:rand(-70,70),r,rot:rand(0,TAU),rv:rand(-1,1),hp:r*1.4,verts});
+  asteroids.push({x,y,vx,vy,r,rot:rand(0,TAU),rv:rand(-1,1),hp:r*1.4,verts,entering});
 }
 function spawnEnemy(){
-  const side=Math.floor(rand(0,4)); let x=side===0?0:side===1?W:rand(0,W), y=side===2?0:side===3?H:rand(0,H);
+  // Always start fully off-screen on a random edge; AI homing pulls them onto the map.
   const t=time;
   const df=diffSettings[difficulty];
   let types=['scout'];
@@ -378,7 +391,13 @@ function spawnEnemy(){
   const type=types[Math.floor(rand(0,types.length))];
   const baseHp={scout:34,hunter:52,gunship:92,sniper:62,carrier:155}[type]+wave*5;
   const hp=Math.round(baseHp*df.hpMult);
-  enemies.push({x,y,vx:0,vy:0,a:0,r:type==='carrier'?22:15,hp,maxHp:hp,type,fire:rand(.3,1.5),spawn:1});
+  const r=type==='carrier'?22:15, m=r+60, side=Math.floor(rand(0,4));
+  let x,y;
+  if(side===0){ x=-m;   y=rand(H*.12,H*.88); }
+  else if(side===1){ x=W+m; y=rand(H*.12,H*.88); }
+  else if(side===2){ x=rand(W*.12,W*.88); y=-m;   }
+  else { x=rand(W*.12,W*.88); y=H+m; }
+  enemies.push({x,y,vx:0,vy:0,a:0,r,hp,maxHp:hp,type,fire:rand(.3,1.5),spawn:1,entering:true});
 }
 function explode(x,y,n,col='#fff'){ for(let i=0;i<n;i++) particles.push({x,y,vx:rand(-220,220),vy:rand(-220,220),life:rand(.25,.85),max:1,col,r:rand(1,3)}); }
 function drop(x,y,amount){ pickups.push({x,y,vx:rand(-35,35),vy:rand(-35,35),r:6,xp:amount,life:18}); }
@@ -494,6 +513,16 @@ function update(dt){
 
 function drawShip(x,y,a,scale=1){
   ctx.save(); ctx.translate(x,y); ctx.rotate(a); ctx.scale(scale,scale);
+
+  // Upgrade intensities — the ship visibly changes as nodes are unlocked.
+  const wpn=Math.min(8,Math.max(1,Math.floor(stats.mounts)));
+  const hullF=clamp((stats.maxHp-baseStats.maxHp)/420,0,1);
+  const shieldF=clamp((stats.shieldCap-baseStats.shieldCap)/320,0,1);
+  const engineF=clamp((stats.thrust-baseStats.thrust)/240,0,1);
+  const critF=clamp((stats.crit-baseStats.crit)/0.30,0,1);
+  const thrusting=keys.has('KeyW')||keys.has('ArrowUp');
+  const hasUltima=nodeLevel('ultima')>0;
+
   // Level aura at level 5+
   if(player.level>=5){
     const glow=ctx.createRadialGradient(0,0,10,0,0,35);
@@ -502,14 +531,89 @@ function drawShip(x,y,a,scale=1){
     glow.addColorStop(1,'rgba(238,41,255,0)');
     ctx.fillStyle=glow; ctx.beginPath(); ctx.arc(0,0,35,0,TAU); ctx.fill();
   }
-  // Glow time effect
-  if(player.glowTime>0){
-    ctx.shadowColor='#f7e43f'; ctx.shadowBlur=20+Math.sin(player.glowTime*12)*10;
+
+  // Engine exhaust plume — grows with engine upgrades, flares while thrusting
+  if(engineF>0.02 || thrusting){
+    const eLen=10+engineF*22+(thrusting?12:0);
+    const flick=thrusting?(0.85+Math.sin(time*40)*0.15):0.7;
+    const eg=ctx.createRadialGradient(-9,0,0,-9-eLen*0.35,0,eLen);
+    eg.addColorStop(0,`rgba(255,228,140,${(0.55+engineF*0.4)*flick})`);
+    eg.addColorStop(.45,`rgba(138,233,255,${(0.4+engineF*0.4)*flick})`);
+    eg.addColorStop(1,'rgba(138,233,255,0)');
+    ctx.fillStyle=eg; ctx.beginPath(); ctx.ellipse(-9-eLen*0.35,0,eLen,4+engineF*5,0,0,TAU); ctx.fill();
   }
-  ctx.strokeStyle='#e9e6ff'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(18,0); ctx.lineTo(-13,-10); ctx.lineTo(-8,0); ctx.lineTo(-13,10); ctx.closePath(); ctx.stroke();
+
+  // Level-up flash
+  if(player.glowTime>0){ ctx.shadowColor='#f7e43f'; ctx.shadowBlur=20+Math.sin(player.glowTime*12)*10; }
+
+  // Weapon barrels — one stub per active mount, fanned along the wings
+  if(wpn>=2){
+    ctx.strokeStyle='#ffd36b'; ctx.lineWidth=2; ctx.lineCap='round';
+    for(let i=0;i<wpn;i++){
+      const side=i%2===0?1:-1, t=Math.floor(i/2);
+      const wy=side*(5+t*4), bx=9-t*5;
+      ctx.beginPath(); ctx.moveTo(bx,wy); ctx.lineTo(bx+11,wy); ctx.stroke();
+    }
+    ctx.lineCap='butt';
+  }
+
+  // Hull — line weight thickens and color warms as the hull is reinforced
+  const hr=Math.round(120+hullF*120), hg=Math.round(230-hullF*30), hb=255;
+  ctx.strokeStyle=hasUltima?'#ffd6ff':`rgb(${hr},${hg},${hb})`;
+  ctx.lineWidth=2+hullF*2.2;
+  ctx.beginPath(); ctx.moveTo(18,0); ctx.lineTo(-13,-10); ctx.lineTo(-8,0); ctx.lineTo(-13,10); ctx.closePath(); ctx.stroke();
   ctx.shadowBlur=0;
-  ctx.strokeStyle='#8ae9ff88'; ctx.beginPath(); ctx.arc(0,0,stats.shieldCap>80?20:17,0,TAU); ctx.stroke();
+
+  // Armor plating — interior bracing lines appear with heavier hulls
+  if(hullF>0.25){
+    ctx.lineWidth=1.4; ctx.strokeStyle=`rgba(200,235,255,${0.35+hullF*0.45})`;
+    ctx.beginPath(); ctx.moveTo(9,0); ctx.lineTo(-9,-6); ctx.moveTo(9,0); ctx.lineTo(-9,6); ctx.stroke();
+  }
+  if(hullF>0.6){ ctx.beginPath(); ctx.moveTo(2,-5); ctx.lineTo(2,5); ctx.stroke(); }
+
+  // Sensor antenna — extends with radar/sensor upgrades
+  if(stats.radar>1.05){
+    const ah=12+stats.radar*4;
+    ctx.strokeStyle='#9ff7ff'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(-3,0); ctx.lineTo(-3,-ah); ctx.stroke();
+    ctx.fillStyle='#9ff7ff'; ctx.beginPath(); ctx.arc(-3,-ah,2,0,TAU); ctx.fill();
+  }
+
+  // Targeting reticle glow on the nose — brightens with crit chance
+  if(critF>0.1){
+    ctx.fillStyle=`rgba(255,110,135,${0.4+critF*0.5})`;
+    ctx.beginPath(); ctx.arc(18,0,2+critF*2.5,0,TAU); ctx.fill();
+  }
+
+  // Singularity core — pulsing reactor when the ultimate is unlocked
+  if(hasUltima){
+    const cg=ctx.createRadialGradient(0,0,0,0,0,13);
+    cg.addColorStop(0,`rgba(238,41,255,${0.65+Math.sin(time*4)*0.25})`);
+    cg.addColorStop(1,'rgba(238,41,255,0)');
+    ctx.fillStyle=cg; ctx.beginPath(); ctx.arc(0,0,13,0,TAU); ctx.fill();
+  }
+
+  // Shield bubble — radius, thickness and brightness scale with shield capacity
+  const sr=16+shieldF*8;
+  const sa=Math.round((0.30+shieldF*0.5)*255).toString(16).padStart(2,'0');
+  ctx.strokeStyle='#8ae9ff'+sa; ctx.lineWidth=1.5+shieldF*1.5;
+  ctx.beginPath(); ctx.arc(0,0,sr,0,TAU); ctx.stroke();
+  if(shieldF>0.5){ ctx.strokeStyle='#bff6ff55'; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(0,0,sr+4,0,TAU); ctx.stroke(); }
+
   ctx.restore();
+
+  // Escort drones — small craft orbiting the ship, one per drone level
+  if(stats.drones>0){
+    const n=Math.round(stats.drones);
+    for(let i=0;i<n;i++){
+      const da=time*1.4 + i/n*TAU;
+      const dx=x+Math.cos(da)*30, dy=y+Math.sin(da)*30;
+      ctx.save(); ctx.translate(dx,dy); ctx.rotate(da+Math.PI/2);
+      ctx.strokeStyle='#9ff7ff'; ctx.fillStyle='#16263d'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.moveTo(0,-4); ctx.lineTo(3,3); ctx.lineTo(-3,3); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.restore();
+    }
+  }
 }
 
 function render(){
@@ -585,8 +689,17 @@ function loop(ts){
 
 function drawWeb(){
   if(!wctx) return; wctx.clearRect(0,0,W,H);
-  const cx=W*.43, cy=H*.50, scale=Math.min(1.1,Math.max(.55,Math.min(W/1200,H/780)));
-  wctx.save(); wctx.translate(cx,cy); wctx.scale(scale,scale);
+  // Fit the whole circular web inside the available area (excluding the info panel).
+  const narrow=W<=720;
+  const padX=60, padTop=72, panelW=narrow?0:400;
+  const availLeft=padX, availRight=W-panelW-padX;
+  const availTop=padTop, availBottom=(narrow?H*0.6:H)-padTop;
+  const availW=Math.max(60,availRight-availLeft), availH=Math.max(60,availBottom-availTop);
+  const LW=840, LH=700, oy=95; // layout bounds (incl. labels) and vertical-centering offset
+  const scale=Math.min(availW/LW, availH/LH, 1.15);
+  const cx=availLeft+availW/2, cy=availTop+availH/2;
+  webView.cx=cx; webView.cy=cy; webView.scale=scale; webView.oy=oy;
+  wctx.save(); wctx.translate(cx,cy); wctx.scale(scale,scale); wctx.translate(0,oy);
   wctx.lineCap='round';
   for(const [a,b] of edges){
     const na=nodes.find(n=>n.id===a), nb=nodes.find(n=>n.id===b);
@@ -635,8 +748,7 @@ function drawWeb(){
   wctx.restore();
 }
 function webPoint(clientX,clientY){
-  const cx=W*.43, cy=H*.50, scale=Math.min(1.1,Math.max(.55,Math.min(W/1200,H/780)));
-  return {x:(clientX-cx)/scale,y:(clientY-cy)/scale};
+  return {x:(clientX-webView.cx)/webView.scale, y:(clientY-webView.cy)/webView.scale-webView.oy};
 }
 webCanvas.addEventListener('click',e=>{
   const p=webPoint(e.clientX,e.clientY); let best=null, bd=26;
