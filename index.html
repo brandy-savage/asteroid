@@ -188,73 +188,90 @@ const baseStats={
 let stats={...baseStats};
 
 const nodes=[
-  {id:'core',x:0,y:0,name:'Command Core',type:'core',cost:0,maxLevel:1,desc:'Run start. Unlock adjacent branches.'},
-  {id:'hull1',x:-69,y:-58,name:'Expanded Hull I',type:'hull',cost:1,maxLevel:3,mods:{maxHp:35},desc:'+35 max hull per level.'},
-  {id:'hull2',x:-162,y:-66,name:'Trussed Frame',type:'hull',cost:2,maxLevel:3,mods:{maxHp:55,drag:.001},desc:'+55 max hull and slightly better inertial stability per level.'},
-  {id:'armor1',x:-258,y:-36,name:'Ablative Plates',type:'hull',cost:2,maxLevel:3,mods:{maxHp:70},desc:'+70 max hull per level.'},
-  {id:'ram',x:-342,y:48,name:'Impact Keel',type:'hull',cost:3,maxLevel:3,mods:{maxHp:90},desc:'Massive hull boost per level.'},
+  {id:'core',     x:0,    y:0,    name:'Command Core',        type:'core',    cost:0, maxLevel:1, desc:'Run start. Unlock adjacent branches.'},
 
-  {id:'mount1',x:74,y:-52,name:'Weapon Mounts I',type:'weapon',cost:1,maxLevel:3,mods:{mounts:1,spread:.07},desc:'Adds paired side cannons per level.'},
-  {id:'gun1',x:155,y:-82,name:'Tuned Accelerators',type:'weapon',cost:2,maxLevel:3,mods:{damage:8,bulletSpeed:90},desc:'+damage and faster rounds per level.'},
-  {id:'gun2',x:244,y:-89,name:'Mag-Rail Lances',type:'weapon',cost:3,maxLevel:3,mods:{damage:14,bulletSpeed:120,pierce:1},desc:'High damage rounds, pierce one small target per level.'},
-  {id:'mount2',x:134,y:-149,name:'Weapon Mounts II',type:'weapon',cost:3,maxLevel:3,mods:{mounts:2,spread:.05},desc:'Adds more hardpoints per level.'},
-  {id:'storm',x:289,y:-188,name:'Broadside Storm',type:'weapon',cost:4,maxLevel:3,mods:{mounts:2,damage:10},desc:'Advanced weapon lattice: many guns per level.'},
+  // Sensor branch
+  {id:'sensor1',  x:0,    y:-90,  name:'Sensor Array',        type:'sensor',  cost:1, maxLevel:3, mods:{pickup:55,radar:.25},           desc:'Extends pickup magnetism and improves target tracking per level.'},
+  {id:'sensor2',  x:0,    y:-180, name:'Tactical Scanner',    type:'sensor',  cost:1, maxLevel:3, mods:{pickup:70,radar:.35,crit:.03},   desc:'Active scanning boosts pickup range and critical chance per level.'},
+  {id:'sensor3',  x:0,    y:-270, name:'Combat AI',           type:'sensor',  cost:1, maxLevel:3, mods:{crit:.10,damage:8},              desc:'AI-assisted fire control. Precision and raw damage per level.'},
 
-  {id:'shield1',x:-58,y:69,name:'Shield Emitters I',type:'shield',cost:1,maxLevel:3,mods:{shieldCap:35,shieldRegen:2},desc:'+35 shield capacity and regeneration per level.'},
-  {id:'shield2',x:-143,y:100,name:'Phase Capacitors',type:'shield',cost:2,maxLevel:3,mods:{shieldCap:55,shieldRegen:4},desc:'Stronger shields per level.'},
-  {id:'shield3',x:-241,y:97,name:'Layered Bubble',type:'shield',cost:3,maxLevel:3,mods:{shieldCap:85,shieldRegen:5},desc:'Large shield capacity upgrade per level.'},
-  {id:'pulse',x:-264,y:222,name:'Repulsor Pulse',type:'shield',cost:3,maxLevel:4,mods:{pulse:true,shieldCap:30},desc:'Press E to push enemies away. Higher levels = wider range and more damage.'},
+  // Weapon branch
+  {id:'weapon1',  x:78,   y:-45,  name:'Hardpoint I',         type:'weapon',  cost:1, maxLevel:3, mods:{mounts:1,spread:.06},           desc:'Adds a weapon hardpoint. More guns per level.'},
+  {id:'weapon2',  x:156,  y:-90,  name:'Ballistic Forge',     type:'weapon',  cost:1, maxLevel:3, mods:{damage:10,bulletSpeed:100},      desc:'Improved projectile velocity and impact force per level.'},
+  {id:'weapon3',  x:234,  y:-135, name:'Railgun Lattice',     type:'weapon',  cost:1, maxLevel:2, mods:{damage:16,bulletSpeed:130,pierce:1}, desc:'Electromagnetic rail rounds pierce targets. High damage per level.'},
 
-  {id:'engine1',x:79,y:42,name:'Vector Thrusters',type:'engine',cost:1,maxLevel:3,mods:{thrust:45,maxSpeed:35},desc:'More acceleration and top speed per level.'},
-  {id:'engine2',x:143,y:100,name:'Afterburn Chamber',type:'engine',cost:2,maxLevel:3,mods:{boost:.55,maxSpeed:45},desc:'Stronger Shift boost and higher top speed per level.'},
-  {id:'engine3',x:193,y:174,name:'Inertial Weave',type:'engine',cost:3,maxLevel:3,mods:{turn:.8,drag:.002,maxSpeed:50},desc:'Better turning, control, and speed per level.'},
+  // Engine branch
+  {id:'engine1',  x:78,   y:45,   name:'Impulse Drive',       type:'engine',  cost:1, maxLevel:3, mods:{thrust:50,maxSpeed:40},          desc:'Increases acceleration and maximum velocity per level.'},
+  {id:'engine2',  x:156,  y:90,   name:'Boost Injectors',     type:'engine',  cost:1, maxLevel:3, mods:{boost:.6,maxSpeed:50},           desc:'Supercharges Shift boost and raises top speed per level.'},
+  {id:'engine3',  x:234,  y:135,  name:'Maneuver Jets',       type:'engine',  cost:1, maxLevel:3, mods:{turn:.9,drag:.002,maxSpeed:55},  desc:'Lateral jets improve turning and glide control per level.'},
 
-  {id:'sensor1',x:-8,y:-90,name:'Sensor Mast',type:'sensor',cost:1,maxLevel:3,mods:{pickup:55,radar:.25},desc:'Pickups magnetize from farther away per level.'},
-  {id:'sensor2',x:-6,y:-175,name:'Threat Suite',type:'sensor',cost:2,maxLevel:3,mods:{pickup:70,radar:.35,crit:.03},desc:'Better sensors increase pickup range and crit chance per level.'},
-  {id:'sensor3',x:9,y:-260,name:'Predictive Targeting',type:'sensor',cost:3,maxLevel:3,mods:{crit:.09,damage:7},desc:'Sensor-driven fire control per level.'},
+  // Crew branch
+  {id:'crew1',    x:0,    y:90,   name:'Hull Technicians',    type:'crew',    cost:1, maxLevel:4, mods:{repair:2.5},                     desc:'Automated hull repair during flight. More repair rate per level.'},
+  {id:'crew2',    x:0,    y:180,  name:'Combat Specialists',  type:'crew',    cost:1, maxLevel:3, mods:{fireRate:1.1,crit:.04},           desc:'Weapons crew improves fire rate and critical chance per level.'},
+  {id:'crew3',    x:0,    y:270,  name:'Salvage Ops',         type:'crew',    cost:1, maxLevel:3, mods:{salvage:.25,pickup:40},           desc:'Salvage crew boosts XP gained and pickup magnetism per level.'},
 
-  {id:'crew1',x:16,y:89,name:'Crew: Repair Chief',type:'crew',cost:1,maxLevel:3,mods:{repair:2},desc:'Slow automatic hull repair per level.'},
-  {id:'crew2',x:-15,y:174,name:'Crew: Gunner Guild',type:'crew',cost:2,maxLevel:3,mods:{fireRate:1.1,crit:.04},desc:'Fire faster and crit more often per level.'},
-  {id:'crew3',x:122,y:230,name:'Crew: Salvage Team',type:'crew',cost:2,maxLevel:3,mods:{salvage:.25,pickup:40},desc:'Gain more XP from salvage per level.'},
-  {id:'drones',x:-122,y:230,name:'Escort Drones',type:'crew',cost:3,maxLevel:3,mods:{drones:2,fireRate:.5},desc:'Escort drones fire with you. More levels = more drones.'},
+  // Shield branch
+  {id:'shield1',  x:-78,  y:45,   name:'Deflector Grid',      type:'shield',  cost:1, maxLevel:3, mods:{shieldCap:40,shieldRegen:2.5},  desc:'Projects an energy deflector. More capacity and regen per level.'},
+  {id:'shield2',  x:-156, y:90,   name:'Phase Field',         type:'shield',  cost:1, maxLevel:3, mods:{shieldCap:60,shieldRegen:4.5},  desc:'Advanced phased shielding. Large capacity and fast regen per level.'},
+  {id:'pulse',    x:-234, y:135,  name:'Pulse Core',          type:'shield',  cost:1, maxLevel:4, mods:{pulse:true,shieldCap:35},        desc:'Press E to emit a repulsor pulse. Higher levels expand range and power.'},
 
-  {id:'hybrid1',x:183,y:-293,name:'Siege Computer',type:'hybrid',cost:4,maxLevel:2,mods:{damage:18,crit:.08,pickup:40},desc:'Weapon + sensor hybrid. Heavy damage and critical targeting.'},
-  {id:'hybrid2',x:-313,y:146,name:'Citadel Doctrine',type:'hybrid',cost:4,maxLevel:2,mods:{maxHp:110,shieldCap:75,shieldRegen:4},desc:'Hull + shield hybrid. Become a fortress.'},
-  {id:'hybrid3',x:342,y:48,name:'Skirmisher Rig',type:'hybrid',cost:4,maxLevel:2,mods:{mounts:1,thrust:65,turn:.7},desc:'Weapon + engine hybrid. Fast attack ship.'},
-  {id:'ultima',x:89,y:-421,name:'Singularity Reactor',type:'ultimate',cost:6,maxLevel:1,mods:{damage:28,shieldCap:100,shieldRegen:7,maxHp:100,pulse:true},desc:'Endgame reactor: offense, defense, and repulsor pulse.'},
+  // Hull branch
+  {id:'hull1',    x:-78,  y:-45,  name:'Hull Plating',        type:'hull',    cost:1, maxLevel:4, mods:{maxHp:40},                       desc:'Reinforces the hull frame. More hit points per level.'},
+  {id:'hull2',    x:-156, y:-90,  name:'Composite Frame',     type:'hull',    cost:1, maxLevel:3, mods:{maxHp:60,drag:.001},             desc:'Composite alloy hull with improved inertial stability per level.'},
+  {id:'hull3',    x:-234, y:-135, name:'Siege Armor',         type:'hull',    cost:1, maxLevel:3, mods:{maxHp:80},                       desc:'Maximum armor plating. Massive hull hit points per level.'},
 
-  {id:'vanguard',x:120,y:5,name:'Vanguard Hull',type:'hybrid',cost:3,maxLevel:2,mods:{maxHp:60,thrust:35,drag:.001},desc:'Hull-engine fusion. Reinforced frame that doesn\'t sacrifice thrust.'},
-  {id:'recon',x:77,y:-174,name:'Recon Package',type:'hybrid',cost:3,maxLevel:2,mods:{crit:.06,thrust:40,radar:.3},desc:'Sensor-engine fusion. Read the battlefield at speed.'},
-  {id:'assault',x:-100,y:155,name:'Assault Doctrine',type:'hybrid',cost:3,maxLevel:2,mods:{damage:12,shieldRegen:3,repair:1.5},desc:'Shield-crew fusion. Aggressive repair and shield cycle.'},
+  // Hybrid nodes at r=200
+  {id:'h_hs', x:-100, y:-173, name:'Sensor Hardpoints',    type:'hybrid', cost:1, maxLevel:2, mods:{maxHp:50,pickup:45,radar:.25},          desc:'Hull-mounted sensors. Structural reinforcement and expanded detection.'},
+  {id:'h_sw', x: 100, y:-173, name:'Fire Control System',  type:'hybrid', cost:1, maxLevel:2, mods:{damage:20,crit:.09,pickup:35},           desc:'Sensor-guided targeting. Precision damage and critical hit boost.'},
+  {id:'h_we', x: 200, y:  0,  name:'Strike Formation',     type:'hybrid', cost:1, maxLevel:2, mods:{mounts:2,thrust:60,drones:1},            desc:'Weapon-engine assault loadout. Extra hardpoints, thrust, and a combat drone.'},
+  {id:'h_ec', x: 100, y: 173, name:'Crew Efficiency',      type:'hybrid', cost:1, maxLevel:2, mods:{boost:.5,fireRate:1.15,maxSpeed:40},      desc:'Engine crew synergy. Better boost, fire rate, and top speed.'},
+  {id:'h_cs', x:-100, y: 173, name:'Shield Crew',          type:'hybrid', cost:1, maxLevel:2, mods:{repair:2,shieldCap:55,shieldRegen:3},     desc:'Dedicated shield technicians. Hull repair and shield reinforcement.'},
+  {id:'h_sh', x:-200, y:  0,  name:'Fortress Protocol',    type:'hybrid', cost:1, maxLevel:2, mods:{maxHp:90,shieldCap:65,shieldRegen:3},     desc:'Maximum defensive configuration. Hull and shield combined fortification.'},
+
+  // Ultimate
+  {id:'ultima', x:0, y:-380, name:'Singularity Reactor', type:'ultimate', cost:1, maxLevel:1, mods:{damage:30,shieldCap:120,shieldRegen:8,maxHp:120,pulse:true}, desc:'Endgame quantum reactor. All systems amplified, repulsor pulse unlocked.'},
 ];
 const edges=[
- ['core','hull1'],['hull1','hull2'],['hull2','armor1'],['armor1','ram'],
- ['core','mount1'],['mount1','gun1'],['gun1','gun2'],['gun1','mount2'],['mount2','storm'],['gun2','storm'],
- ['core','shield1'],['shield1','shield2'],['shield2','shield3'],['shield3','pulse'],
- ['core','engine1'],['engine1','engine2'],['engine2','engine3'],
- ['core','sensor1'],['sensor1','sensor2'],['sensor2','sensor3'],
- ['core','crew1'],['crew1','crew2'],['crew2','crew3'],['shield2','drones'],['crew2','drones'],
- ['sensor3','hybrid1'],['gun2','hybrid1'],['hull2','hybrid2'],['shield3','hybrid2'],['mount2','hybrid3'],['engine3','hybrid3'],
- ['hybrid1','ultima'],['hybrid2','ultima'],['hybrid3','ultima'],
- ['hull1','shield1'],
- ['hull1','vanguard'],['engine1','vanguard'],
- ['shield1','crew1'],
- ['sensor1','mount1'],
- ['sensor1','recon'],['engine2','recon'],
- ['crew1','engine1'],
- ['shield2','assault'],['crew1','assault'],
- ['crew2','sensor2'],
- ['engine2','crew3'],
- ['armor1','hybrid2'],
- ['gun1','hybrid3'],
- ['sensor2','hybrid1'],
- ['recon','hybrid1'],
- ['vanguard','hybrid3'],
- ['assault','hybrid2'],
+  // Core → T1 (6)
+  ['core','sensor1'],['core','weapon1'],['core','engine1'],
+  ['core','crew1'],  ['core','shield1'],['core','hull1'],
+
+  // T1 → T2 → T3 per branch (12)
+  ['sensor1','sensor2'],['sensor2','sensor3'],
+  ['weapon1','weapon2'],['weapon2','weapon3'],
+  ['engine1','engine2'],['engine2','engine3'],
+  ['crew1',  'crew2'],  ['crew2',  'crew3'],
+  ['shield1','shield2'],['shield2','pulse'],
+  ['hull1',  'hull2'],  ['hull2',  'hull3'],
+
+  // T1 lateral ring — adjacent branches connected at first tier (6)
+  ['sensor1','weapon1'],['weapon1','engine1'],
+  ['engine1','crew1'],  ['crew1',  'shield1'],
+  ['shield1','hull1'],  ['hull1',  'sensor1'],
+
+  // T2 → adjacent hybrids (12)
+  ['sensor2','h_hs'],['hull2',  'h_hs'],
+  ['sensor2','h_sw'],['weapon2','h_sw'],
+  ['weapon2','h_we'],['engine2','h_we'],
+  ['engine2','h_ec'],['crew2',  'h_ec'],
+  ['crew2',  'h_cs'],['shield2','h_cs'],
+  ['shield2','h_sh'],['hull2',  'h_sh'],
+
+  // T3 → adjacent hybrids (12)
+  ['sensor3','h_hs'],['hull3', 'h_hs'],
+  ['sensor3','h_sw'],['weapon3','h_sw'],
+  ['weapon3','h_we'],['engine3','h_we'],
+  ['engine3','h_ec'],['crew3', 'h_ec'],
+  ['crew3',  'h_cs'],['pulse', 'h_cs'],
+  ['pulse',  'h_sh'],['hull3', 'h_sh'],
+
+  // Hybrids → ultima (6)
+  ['h_hs','ultima'],['h_sw','ultima'],['h_we','ultima'],
+  ['h_ec','ultima'],['h_cs','ultima'],['h_sh','ultima'],
 ];
 const edgeMap=new Map(); for(const [a,b] of edges){ if(!edgeMap.has(a))edgeMap.set(a,[]); if(!edgeMap.has(b))edgeMap.set(b,[]); edgeMap.get(a).push(b); edgeMap.get(b).push(a); }
 let selected=null;
-let webView={cx:0,cy:0,scale:1,oy:95};
+let webView={cx:0,cy:0,scale:1,oy:55};
 
 function recomputeStats(){
   const oldMax=stats.maxHp||baseStats.maxHp, oldShield=stats.shieldCap||baseStats.shieldCap;
@@ -695,7 +712,7 @@ function drawWeb(){
   const availLeft=padX, availRight=W-panelW-padX;
   const availTop=padTop, availBottom=(narrow?H*0.6:H)-padTop;
   const availW=Math.max(60,availRight-availLeft), availH=Math.max(60,availBottom-availTop);
-  const LW=840, LH=700, oy=95; // layout bounds (incl. labels) and vertical-centering offset
+  const LW=560, LH=720, oy=55; // layout bounds (incl. labels) and vertical-centering offset
   const scale=Math.min(availW/LW, availH/LH, 1.15);
   const cx=availLeft+availW/2, cy=availTop+availH/2;
   webView.cx=cx; webView.cy=cy; webView.scale=scale; webView.oy=oy;
